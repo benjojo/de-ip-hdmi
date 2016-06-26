@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/binary"
 	"flag"
 	"fmt"
@@ -9,6 +10,8 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
+	"syscall"
 )
 
 type Frame struct {
@@ -19,7 +22,32 @@ type Frame struct {
 
 func main() {
 	interf := flag.String("interface", "eth0", "What interface the device is attached to")
+	debug := flag.Bool("debug", false, "Print loads of debug info")
+	output_mkv := flag.Bool("mkv", true, "Spit out Audio + Video contained in MKV, else spit out raw MJPEG")
+	audio := flag.Bool("audio", true, "Output audio into MKV as well")
 	flag.Parse()
+
+	var videowriter *os.File
+	pipename := randString(5)
+	audiodis := make(chan []byte, 100)
+	videodis := make(chan []byte, 100)
+
+	if *output_mkv {
+		go WrapinMKV(fmt.Sprintf("/tmp/hdmi-Vfifo-%s", pipename), audiodis, *audio)
+
+		err := syscall.Mkfifo(fmt.Sprintf("/tmp/hdmi-Vfifo-%s", pipename), 0664)
+		if err != nil {
+			log.Fatalf("Could not make a fifo in /tmp/hdmi-Vfifo-%s, %s", pipename, err.Error())
+		}
+
+		videowriter, err = os.OpenFile(fmt.Sprintf("/tmp/hdmi-Vfifo-%s", pipename), os.O_WRONLY, 0664)
+		if err != nil {
+			log.Fatalf("Could not open newly made fifo in /tmp/hdmi-Vfifo-%s, %s", pipename, err.Error())
+		}
+		go DumpChanToFile(videodis, videowriter)
+	} else {
+		videowriter = os.Stdout
+	}
 
 	MULTICAST_MAC := []byte{0x01, 0x00, 0x5e, 0x02, 0x02, 0x02}
 
@@ -32,11 +60,12 @@ func main() {
 
 	droppedframes := 0
 	desyncframes := 0
+	totalframes := 0
 
 	CurrentPacket := Frame{}
 	CurrentPacket.Data = make([]byte, 0)
 
-	os.Stdout.WriteString("--myboundary\nContent-Type: image/jpeg\n\n")
+	videodis <- []byte("--myboundary\nContent-Type: image/jpeg\n\n")
 
 	for pkt, r := h.NextEx(); r >= 0; pkt, r = h.NextEx() {
 		if r == 0 {
@@ -55,12 +84,22 @@ func main() {
 			continue
 		}
 
+		ApplicationData := pkt.Data[42:]
+
+		// Maybe there is some audio data?
+		if pkt.Data[34] == 0x08 && pkt.Data[35] == 0x12 && *output_mkv && *audio {
+			select {
+			case audiodis <- ApplicationData[16:]:
+			default:
+			}
+
+			continue
+		}
+
 		// Check that the port is 2068
 		if pkt.Data[34] != 0x08 || pkt.Data[35] != 0x14 {
 			continue
 		}
-
-		ApplicationData := pkt.Data[42:]
 
 		FrameNumber := uint16(0)
 		CurrentChunk := uint16(0)
@@ -83,7 +122,9 @@ func main() {
 			continue
 		}
 
-		// log.Printf("%d/%d - %d/%d - %d", FrameNumber, CurrentChunk, CurrentPacket.FrameID, CurrentPacket.LastChunk, len(ApplicationData))
+		if *debug {
+			log.Printf("%d/%d - %d/%d - %d", FrameNumber, CurrentChunk, CurrentPacket.FrameID, CurrentPacket.LastChunk, len(ApplicationData))
+		}
 
 		if CurrentPacket.LastChunk != 0 && CurrentPacket.LastChunk != CurrentChunk-1 {
 			if uint16(^(CurrentChunk << 15)) != 65534 {
@@ -112,10 +153,19 @@ func main() {
 
 		if uint16(^(CurrentChunk >> 15)) == 65534 {
 			// Flush the frame to output
-			os.Stdout.WriteString("\n--myboundary\nContent-Type: image/jpeg\n\n")
-			log.Printf("Size: %d", len(CurrentPacket.Data))
-			buf := bytes.NewBuffer(CurrentPacket.Data)
-			io.Copy(os.Stdout, buf)
+
+			fin := []byte("\n--myboundary\nContent-Type: image/jpeg\n\n")
+			fin = append(fin, CurrentPacket.Data...)
+			select {
+			case videodis <- fin:
+			default:
+			}
+
+			totalframes++
+
+			if *debug {
+				log.Printf("Size: %d", len(CurrentPacket.Data))
+			}
 
 			CurrentPacket = Frame{}
 			CurrentPacket.Data = make([]byte, 0)
@@ -124,4 +174,53 @@ func main() {
 		}
 
 	}
+}
+
+func randString(n int) string {
+	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	var bytes = make([]byte, n)
+	rand.Read(bytes)
+	for i, b := range bytes {
+		bytes[i] = alphanum[b%byte(len(alphanum))]
+	}
+	return string(bytes)
+}
+
+func WrapinMKV(uuidpath string, audioin chan []byte, audio bool) {
+	var ffmpeg *exec.Cmd
+	if audio {
+		ffmpeg = exec.Command("ffmpeg", "-f", "mjpeg", "-i", uuidpath, "-f", "s32be", "-ac", "2", "-ar", "44100", "-i", "pipe:0", "-f", "matroska", "-codec", "copy", "pipe:1")
+	} else {
+		ffmpeg = exec.Command("ffmpeg", "-f", "mjpeg", "-i", uuidpath, "-f", "matroska", "-codec", "copy", "pipe:1")
+	}
+	ffmpegstdout, err := ffmpeg.StdoutPipe()
+	if err != nil {
+		log.Fatalf("Unable to setup pipes for ffmpeg (stdout)")
+	}
+	ffmpeg.Stderr = os.Stderr
+
+	audiofile, err := ffmpeg.StdinPipe()
+
+	go DumpChanToFile(audioin, audiofile)
+
+	ffmpeg.Start()
+
+	for {
+		_, err := io.Copy(os.Stdout, ffmpegstdout)
+		if err != nil {
+			log.Fatalf("unable to read to stdout: %s", err.Error())
+		}
+	}
+}
+
+func DumpChanToFile(channel chan []byte, file io.WriteCloser) {
+	for blob := range channel {
+		buf := bytes.NewBuffer(blob)
+		_, err := io.Copy(file, buf)
+		if err != nil {
+			log.Fatalf("unable to write to pipe: %s", err.Error())
+		}
+	}
+
+	log.Fatalf("Channel closed")
 }
