@@ -47,7 +47,7 @@ You can pipe the tool directly into ffmpeg or vlc and then work with the content
 
 ![Only a small bitrate](https://blog.benjojo.co.uk/asset/cdAOZkOiiu)
 
-The code for this project can be found on my github: [github.com/benjojo/de-ip-hdmi](https://github.com/benjojo/de-ip-hdmi)
+The code for this project can be found on my github: [github.com/benjojo/de-ip-hdmi](https://github.com/benjojo/de-ip-hdmi) or there is a prebuild deb file that is ready to go (Ubuntu and Debian should be fine) here: [Link](https://github.com/benjojo/de-ip-hdmi/releases/tag/0.1)
 
 ### Quality samples
 

@@ -5,7 +5,7 @@ Turn cheap HDMI over IP devices into MKV / JPEG streams for your own personal us
 
 ![an example device](example-device.jpg)
 
-This tool is designed to target a unbranded set of HDMI extenders that use IP. You can find a write up on this either in blog.md, or on my blog itself.
+This tool is designed to target a unbranded set of HDMI extenders that use IP. You can find a write up on this either in blog.md, or on my blog itself: https://blog.benjojo.co.uk/post/cheap-hdmi-capture-for-linux
 
 ```
 Usage of de-ip-hdmi:
