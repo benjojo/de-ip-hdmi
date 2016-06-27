@@ -17,7 +17,7 @@ I noticed that my version of the device was one higher than danman had on his po
 
 I found that the audio sample rate had changed to 44100hz, down from the 48000hz that danman reported. (Though this could be dependent on the input?)
 
-One of the more nasty issues I had to deal with was the activation sequence, since the sender will only send when it knows that there is a receiver ready to listen for it and I had to do more digging on the activation system. I bought wireshark out and started to plug the receiver in and out while watching the traffic to see if I could spot any clues. After a few plugs I finally gained a clue:
+One of the more nasty issues I had to deal with was the activation sequence, since the sender will only send when it knows that there is a receiver ready to listen for it and I had to do more digging on the activation system. I brought wireshark out and started to plug the receiver in and out while watching the traffic to see if I could spot any clues. After a few plugs I finally gained a clue:
 
 ![an wild arp packet appears](https://blog.benjojo.co.uk/asset/8Bnq0Va0fx)
 
