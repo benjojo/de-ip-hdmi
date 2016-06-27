@@ -285,11 +285,11 @@ func BroadcastWakeups(ifname string, sendermac string) {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 
 	packet[0] = macbytes[0]
-	packet[0] = macbytes[1]
-	packet[0] = macbytes[2]
-	packet[0] = macbytes[3]
-	packet[0] = macbytes[4]
-	packet[0] = macbytes[5]
+	packet[1] = macbytes[1]
+	packet[2] = macbytes[2]
+	packet[3] = macbytes[3]
+	packet[4] = macbytes[4]
+	packet[5] = macbytes[5]
 
 	for {
 		conn, err := raw.ListenPacket(ifc, raw.ProtocolARP)
