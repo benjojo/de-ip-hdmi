@@ -35,7 +35,7 @@ and saw the receiver biting on the bait! After reconfiguring my interfaces, I fi
 
 After realising that with this version of the unit you could not send these packets to broadcast to trigger activation, I addressed its MAC address directly and we had full transmission without the receiver being plugged in at all!
 
-I've improved upon the original set of scripts that dump these devices, you can find them [here on github](https://github.com/benjojo/de-hdmi-ip) and they should now be more stable and nicer to use, It also uses less CPU to output:
+I've improved upon the original set of scripts that dump these devices, you can find them [here on github](https://github.com/benjojo/de-ip-hdmi) and they should now be more stable and nicer to use, It also uses less CPU to output:
 
 ![only about 25% of a core to do this](https://blog.benjojo.co.uk/asset/EeEm5eFbDn)
 
