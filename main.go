@@ -157,9 +157,7 @@ func main() {
 			CurrentPacket.LastChunk = CurrentChunk
 		}
 
-		for _, v := range ApplicationData[4:] {
-			CurrentPacket.Data = append(CurrentPacket.Data, v)
-		}
+		CurrentPacket.Data = append(CurrentPacket.Data, ApplicationData[4:]...)
 
 		if uint16(^(CurrentChunk >> 15)) == 65534 {
 			// Flush the frame to output
