@@ -125,7 +125,6 @@ func main() {
 			if CurrentPacket.FrameID < FrameNumber {
 				CurrentPacket = Frame{}
 				CurrentPacket.Data = make([]byte, 0)
-				CurrentPacket.FrameID = CurrentPacket.FrameID
 				CurrentPacket.LastChunk = 0
 				log.Printf("Dropped packet because of non sane frame number (%d dropped so far)", droppedframes)
 			}
@@ -149,7 +148,6 @@ func main() {
 				desyncframes++
 				CurrentPacket = Frame{}
 				CurrentPacket.Data = make([]byte, 0)
-				CurrentPacket.FrameID = CurrentPacket.FrameID
 				CurrentPacket.LastChunk = 0
 
 				continue
