@@ -250,7 +250,7 @@ func BroadcastWakeups(ifname string, sendermac string) {
 		0x00, 0x00, 0x0a, 0x00, 0x00, 0x03, 0x03, 0x01, 0x00, 0x26, 0x00, 0x00, 0x00, 0x00, 0x02, 0xef,
 		0xdc}, make([]byte, 489)...)
 
-	packet = append(macbytes[:6], packet[:6]...)
+	packet = append(macbytes[:6], packet[6:]...)
 
 	for {
 		conn, err := raw.ListenPacket(ifc, raw.ProtocolARP)
