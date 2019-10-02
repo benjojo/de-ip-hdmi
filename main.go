@@ -53,11 +53,13 @@ func main() {
 		videowriter, err = os.OpenFile(fmt.Sprintf("/tmp/hdmi-Vfifo-%s", pipename), os.O_WRONLY, 0664)
 		if err != nil {
 			log.Fatalf("Could not open newly made fifo in /tmp/hdmi-Vfifo-%s, %s", pipename, err.Error())
+			return
 		}
-		go DumpChanToFile(videodis, videowriter)
 	} else {
 		videowriter = os.Stdout
 	}
+
+	go DumpChanToFile(videodis, videowriter)
 
 	MULTICAST_MAC := []byte{0x01, 0x00, 0x5e, 0x02, 0x02, 0x02}
 
