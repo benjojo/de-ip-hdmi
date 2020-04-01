@@ -98,8 +98,8 @@ func main() {
 
 		ApplicationData := pkt.Data[42:]
 
-		// Maybe there is some audio data?
-		if pkt.Data[34] == 0x08 && pkt.Data[35] == 0x12 && *output_mkv && *audio {
+		// Maybe there is some audio data on port 2066?
+		if pkt.Data[36] == 0x08 && pkt.Data[37] == 0x12 && *output_mkv && *audio {
 			select {
 			case audiodis <- ApplicationData[16:]:
 			default:
@@ -109,7 +109,7 @@ func main() {
 		}
 
 		// Check that the port is 2068
-		if pkt.Data[34] != 0x08 || pkt.Data[35] != 0x14 {
+		if pkt.Data[36] != 0x08 || pkt.Data[37] != 0x14 {
 			continue
 		}
 
