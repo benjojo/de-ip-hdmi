@@ -7,8 +7,6 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
-	"github.com/mdlayher/raw"
-	"github.com/miekg/pcap"
 	"io"
 	"log"
 	"net"
@@ -16,6 +14,9 @@ import (
 	"os/exec"
 	"syscall"
 	"time"
+
+	"github.com/ljfranklin/pcap"
+	"github.com/mdlayher/raw"
 )
 
 type Frame struct {
@@ -255,7 +256,7 @@ func BroadcastWakeups(ifname string, sendermac string) {
 	packet = append(macbytes[:6], packet[6:]...)
 
 	for {
-		conn, err := raw.ListenPacket(ifc, raw.ProtocolARP)
+		conn, err := raw.ListenPacket(ifc, protocolARP, nil)
 		if err != nil {
 			log.Fatalf("Unable to keep broadcasting the keepalives, %s", err.Error())
 		}
@@ -264,3 +265,7 @@ func BroadcastWakeups(ifname string, sendermac string) {
 		time.Sleep(time.Second)
 	}
 }
+
+const (
+	protocolARP = uint16(0x0806)
+)
